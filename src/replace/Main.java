@@ -4,7 +4,10 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Main {
 
@@ -25,6 +28,15 @@ public class Main {
     }
 
     private static void replace(String suffix) throws Exception {
+        Log("开始生成文件列表...");
+        Runtime.getRuntime().exec("cmd /c dir /b/a-d/s > list");
+        File list = new File("list");
+        long last = System.currentTimeMillis();
+        while (!list.exists() || System.currentTimeMillis() - last < 5000) {
+            Thread.sleep(10);
+            System.out.print(".");
+        }
+        System.out.print("\n\r");
         Log("开始读取映射表...");
         loadCsv();
         Log("开始读取文件...");
@@ -62,7 +74,7 @@ public class Main {
         File param = new File("params.csv");
         File method = new File("methods.csv");
 
-        List<String> fields = null;
+        List<String> fields = new ArrayList<>();
         try {
             fields = FileUtils.readLines(field, "utf8");
         } catch (IOException e) {
@@ -88,19 +100,15 @@ public class Main {
     }
 
     private static void loadSrc(String suffix) throws Exception {
-        //Runtime.getRuntime().exec("cmd /c dir /b/a-d/s > list");
+
         File list = new File("list");
         if (!list.exists()) throw new Exception();
         paths = FileUtils.readLines(list, "utf8");
-        Iterator<String> it = paths.iterator();
-        while (it.hasNext()) {
-            if (!it.next().endsWith(suffix))
-                it.remove();
-        }
+        paths.removeIf(s -> !s.endsWith(suffix));
     }
 
     private static void showUsage() {
-        Log("命令格式不正确!");
+        Log("java -jar replace.jar <suffix>");
     }
 
     private static void Log(String message) {

@@ -122,6 +122,7 @@ public class Replace {
             lines.forEach(line -> {
                 try {
                     writer.write(line);
+                    writer.newLine();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

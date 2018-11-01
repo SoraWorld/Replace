@@ -1,15 +1,11 @@
-package replace;
-
-import org.apache.commons.io.FileUtils;
-
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Main {
+public class Replace {
 
     private static Map<String, String> fieldMap = new HashMap<>();
     private static Map<String, String> paramMap = new HashMap<>();
@@ -24,7 +20,6 @@ public class Main {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     private static void replace(String suffix) throws Exception {
@@ -44,29 +39,30 @@ public class Main {
         Log("开始转换文件...");
         int i = 0;
         for (String path : paths) {
-            new Thread(() -> {
-                try {
-                    _replace(path);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }).start();
+            new Thread(() -> _replace(path)).start();
             Log("已加载 [" + (++i) + "] 个文件...");
         }
         Log("文件已全部加载,等待处理结束...");
     }
 
-    private static void _replace(String path) throws IOException {
+    private static void _replace(String path) {
         File file = new File(path);
-        String content = FileUtils.readFileToString(file, "utf8");
-        for (Map.Entry<String, String> entry : fieldMap.entrySet())
-            content = content.replace(entry.getKey(), entry.getValue());
-        for (Map.Entry<String, String> entry : paramMap.entrySet())
-            content = content.replace(entry.getKey(), entry.getValue());
-        for (Map.Entry<String, String> entry : methodMap.entrySet())
-            content = content.replace(entry.getKey(), entry.getValue());
-        if (file.delete()) FileUtils.writeStringToFile(file, content, "utf8");
+        List<String> lines = readLines(file);
+        replaceLine(lines, fieldMap);
+        replaceLine(lines, paramMap);
+        replaceLine(lines, methodMap);
+        if (file.delete()) writeLines(file, lines);
         else Log("ERROR");
+    }
+
+    private static void replaceLine(List<String> lines, Map<String, String> map) {
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            for (int i = 0; i < lines.size(); i++) {
+                String text = lines.get(i);
+                text = text.replace(entry.getKey(), entry.getValue());
+                lines.set(i, text);
+            }
+        }
     }
 
     private static void loadCsv() throws Exception {
@@ -74,17 +70,9 @@ public class Main {
         File param = new File("params.csv");
         File method = new File("methods.csv");
 
-        List<String> fields = new ArrayList<>();
-        try {
-            fields = FileUtils.readLines(field, "utf8");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        List<String> params = FileUtils.readLines(param, "utf8");
-        List<String> methods = FileUtils.readLines(method, "utf8");
-        loadMap(fields, fieldMap);
-        loadMap(params, paramMap);
-        loadMap(methods, methodMap);
+        loadMap(readLines(field), fieldMap);
+        loadMap(readLines(param), paramMap);
+        loadMap(readLines(method), methodMap);
     }
 
     private static void loadMap(List<String> list, Map<String, String> map) throws Exception {
@@ -100,10 +88,9 @@ public class Main {
     }
 
     private static void loadSrc(String suffix) throws Exception {
-
         File list = new File("list");
         if (!list.exists()) throw new Exception();
-        paths = FileUtils.readLines(list, "utf8");
+        paths = readLines(list);
         paths.removeIf(s -> !s.endsWith(suffix));
     }
 
@@ -115,4 +102,34 @@ public class Main {
         System.out.println("[Decompile] " + message);
     }
 
+    private static List<String> readLines(File file) {
+        List<String> list = new ArrayList<>();
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
+            reader.lines().forEach(list::add);
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    private static void writeLines(File file, List<String> lines) {
+        BufferedWriter writer;
+        try {
+            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
+            lines.forEach(line -> {
+                try {
+                    writer.write(line);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

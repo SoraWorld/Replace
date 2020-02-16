@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="replace:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/replace_jar</output-path>
+    <root id="archive" name="replace.jar">
+      <element id="module-output" name="replace" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/commons-lang3-3.5.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/commons-io-2.5.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
